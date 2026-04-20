@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Game of Truth — CA Progression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #ffffff;
+    --surface:#f7f7f5;
+    --border: #e0ddd8;
+    --accent: #b91c1c;
+    --green:  #16a34a;
+    --muted:  #374151;
+    --text:   #111111;
+    --mono:   'JetBrains Mono','Fira Code','Courier New',monospace;
+    --serif:  'Cormorant Garamond','Palatino Linotype',Georgia,serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--serif); font-weight: 300; font-size: 15px; line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .top {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.55rem 1.4rem; border-bottom: 1px solid #000;
+    flex-wrap: wrap;
+  }
+  .top-title { font-family: var(--serif); font-weight: 300; font-size: 1.5rem; letter-spacing: 0.18em; color: var(--accent); }
+  .top-sub   { font-family: var(--serif); font-weight: 300; font-size: 0.82rem; color: var(--muted); }
+  .top-nav   { margin-left: auto; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+
+  .hero {
+    padding: 2.4rem 1.4rem 1.6rem;
+    max-width: 820px;
+  }
+  .hero h1 { font-family: var(--serif); font-weight: 300; font-size: 2.1rem; letter-spacing: 0.04em; margin-bottom: 0.7rem; }
+  .hero p  { font-family: var(--serif); font-size: 1.05rem; color: var(--muted); line-height: 1.75; max-width: 680px; }
+  .hero .axiom {
+    margin-top: 1.1rem; padding: 0.6rem 0.9rem;
+    border-left: 3px solid var(--accent);
+    font-style: italic; font-size: 0.97rem; color: var(--text);
+    background: var(--surface);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0; border-top: 1px solid #000;
+  }
+
+  .card {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.3rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .card:hover { background: var(--surface); }
+  .card-num {
+    font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .card-title {
+    font-family: var(--serif); font-size: 1.15rem; font-weight: 300;
+    color: var(--text); line-height: 1.3;
+  }
+  .card-desc {
+    font-family: var(--serif); font-size: 0.88rem; color: var(--muted);
+    line-height: 1.65; flex: 1;
+  }
+  .card-link {
+    font-family: var(--mono); font-size: 0.64rem; color: var(--accent);
+    letter-spacing: 0.06em; margin-top: 0.4rem;
+    display: inline-block;
+  }
+  .card.is-current {
+    border-left: 3px solid var(--accent);
+  }
+  .card.is-current .card-title { color: var(--accent); }
+  .badge-current {
+    display: inline-block; font-family: var(--mono); font-size: 0.56rem;
+    padding: 0.1rem 0.35rem; border: 1px solid var(--accent); color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+  .badge-reverted {
+    display: inline-block; font-family: var(--mono); font-size: 0.56rem;
+    padding: 0.1rem 0.35rem; border: 1px solid var(--muted); color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .arrow-chain {
+    padding: 0.5rem 1.4rem 0.3rem;
+    font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+    letter-spacing: 0.07em; border-bottom: 1px solid var(--border);
+  }
+  .arrow-chain span { color: var(--accent); margin: 0 0.3rem; }
+
+  .footer {
+    padding: 0.8rem 1.4rem; border-top: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+    display: flex; gap: 2rem; flex-wrap: wrap;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="top-title">RSA</span>
+  <span class="top-sub">The Game of Truth — CA Progression</span>
+  <div class="top-nav"><a href="https://wellposedness.github.io/FREED/">← FREED daemon</a></div>
+</div>
+
+<div class="hero">
+  <h1>The Game of Truth</h1>
+  <p>
+    Ten iterations of a cellular automaton built from first principles.
+    The physics is the Mandelbrot set. The agents are cognitive types.
+    The question each generation asks is the same one the RSA kernel asks:
+    what survives at the boundary between order and chaos?
+  </p>
+  <div class="axiom">
+    ∃R(t) → ∃M₀ : dS(M<sub>R</sub>,t)/dt &gt; 0 — to reason is to burn.
+    The simulation is a proof of that claim run forward in time.
+  </div>
+</div>
+
+<div class="arrow-chain">
+  v1 <span>→</span> v2 <span>→</span> v3 <span>→</span> v4 <span>→</span> v5 <span>→</span> v6 <span>→</span> v7 <span>→</span> v8 <span>→</span> v9 <span>→</span> v10
+</div>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="card-num">v1 · gen 117</div>
+    <div class="card-title">RSA-Omega: First Contact</div>
+    <div class="card-desc">The original. Rectangular grid, Mandelbrot escape as the energy field, basic birth/death mechanics. The seed from which everything grew.</div>
+    <a class="card-link" href="v1.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v2 · gen 126</div>
+    <div class="card-title">The Aesthetic</div>
+    <div class="card-desc">Visual language aligned with FREED: Cormorant Garamond, JetBrains Mono, white background, red accent. The simulation found its face.</div>
+    <a class="card-link" href="v2.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v3 · gen 133</div>
+    <div class="card-title">Mandelbrot Physics</div>
+    <div class="card-desc">Physics rebuilt from scratch. Seven escape-band energy zones. The CA now lives <em>inside</em> the fractal geometry rather than running alongside it.</div>
+    <a class="card-link" href="v3.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v4 · gen 134</div>
+    <div class="card-title">Zoom Trajectory</div>
+    <div class="card-desc">The Mandelbrot set zooms continuously toward c=−0.75+0.1i. Survival and compression metrics track what remains viable at the moving boundary.</div>
+    <a class="card-link" href="v4.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v5 · gen 140</div>
+    <div class="card-title">Alien Anatomical Layout <span class="badge-reverted">reverted</span></div>
+    <div class="card-desc">The page itself shaped like a living creature. Reverted — but the instinct was sound. A simulation of life should feel like one. Preserved as an iteration.</div>
+    <a class="card-link" href="v5.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v6 · gen 140</div>
+    <div class="card-title">Voronoi Foam Topology</div>
+    <div class="card-desc">Rectangular grid abolished. 220 pressure-equilibrated cells arranged as Voronoi foam. When the topology changes, the physics changes.</div>
+    <a class="card-link" href="v6.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v7 · gen 140</div>
+    <div class="card-title">3-Panel HUD</div>
+    <div class="card-desc">The simulation gets its command interface. Argument left, simulation center, live state right. The CA is now a HUD — a dashboard for watching a theory prove itself.</div>
+    <a class="card-link" href="v7.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v8 · gen 141</div>
+    <div class="card-title">Three Cognitive Types + Zipf</div>
+    <div class="card-desc">First agent taxonomy: Navigator, Builder, Drifter. A Zipf histogram appears. The CA begins sorting itself by behavioral type without being told to.</div>
+    <a class="card-link" href="v8.html">open simulation →</a>
+  </div>
+
+  <div class="card">
+    <div class="card-num">v9 · gen 141</div>
+    <div class="card-title">Variable Population</div>
+    <div class="card-desc">Dead cells stay dead. Spontaneous generation at random. No fixed population ceiling. The ecology breathes. Extinction is now real.</div>
+    <a class="card-link" href="v9.html">open simulation →</a>
+  </div>
+
+  <div class="card is-current">
+    <div class="card-num">v10 · gen 141 <span class="badge-current">current</span></div>
+    <div class="card-title">The Game of Truth — Six Types</div>
+    <div class="card-desc">
+      Six types on two axes: Physics/Symbol × depth (Builder/Navigator/Drifter).
+      Symbol Builders go nearly extinct at high Mandelbrot complexity.
+      That is not an aesthetic choice — it is a falsifiable prediction of the Noether's Table,
+      confirmed here.
+    </div>
+    <a class="card-link" href="v10.html">open simulation →</a>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>FREED-CA · David Harry Freed · Olney, Maryland</span>
+  <span>isolated from FREED daemon · hand-edited only</span>
+  <span><a href="https://wellposedness.github.io/FREED/">← FREED daemon site</a></span>
+</div>
+
+</body>
+</html>

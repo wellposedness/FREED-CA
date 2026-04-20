@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freed's Law Simulation — FREED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #ffffff;
+    --surface: #f7f7f5;
+    --border:  #e0ddd8;
+    --accent:  #b91c1c;
+    --green:   #16a34a;
+    --amber:   #b45309;
+    --text:    #111111;
+    --muted:   #374151;
+    --mono:    'JetBrains Mono','Fira Code','Courier New',monospace;
+    --serif:   'Cormorant Garamond','Palatino Linotype',Georgia,serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--serif); font-size: 15px; line-height: 1.7;
+    padding: 1.5rem 1.5rem;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 0.9rem; margin-bottom: 1.4rem; }
+  .header .nav { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-bottom: 0.5rem; letter-spacing: 0.06em; }
+  .header h1 { font-family: var(--serif); font-weight: 300; font-size: 1.9rem; color: var(--accent); letter-spacing: 0.02em; }
+  .header .sub { font-family: var(--serif); font-weight: 300; font-style: italic; color: var(--muted); font-size: 1rem; margin-top: 0.2rem; }
+
+  .sim-wrap {
+    width: 100%; background: #080808;
+    border: 1px solid var(--border); margin-bottom: 0.9rem; line-height: 0;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 0.45rem;
+    align-items: center; margin-bottom: 0.9rem;
+  }
+  .btn {
+    padding: 0.35rem 0.85rem; background: transparent;
+    border: 1px solid var(--accent); color: var(--accent);
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.07em;
+    cursor: pointer; transition: background 0.12s, color 0.12s;
+  }
+  .btn:hover, .btn.active { background: var(--accent); color: var(--bg); }
+  .speed-wrap { display: flex; align-items: center; gap: 0.45rem; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+  input[type=range] { accent-color: var(--accent); width: 80px; }
+
+  .stats { margin-bottom: 1.4rem; }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0.28rem 0; border-bottom: 1px solid var(--border);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .label { font-family: var(--mono); color: var(--muted); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-row .value { font-family: var(--mono); font-size: 0.82rem; color: var(--text); }
+  .stat-row .value.accent { color: var(--accent); font-weight: 600; }
+  .stat-row .value.green  { color: var(--green);  font-weight: 600; }
+
+  .section { margin-bottom: 1.6rem; }
+  .section-title {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--text);
+    border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; margin-bottom: 0.8rem;
+  }
+  .theory p { font-family: var(--serif); font-weight: 300; font-size: 1rem; margin-bottom: 0.7rem; color: var(--text); }
+  .theory em { font-style: italic; }
+  .theory .law {
+    font-family: var(--mono); font-size: 0.88rem;
+    background: var(--surface); border-left: 3px solid var(--accent);
+    padding: 0.7rem 1rem; margin: 0.9rem 0; line-height: 1.6;
+  }
+  .theory .law .sub-law { font-family: var(--serif); font-weight: 300; font-style: italic; font-size: 0.9rem; color: var(--muted); margin-top: 0.3rem; }
+  .legend { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+  .legend-swatch { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
+
+  #init-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #080808; color: #555;
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+    pointer-events: none;
+  }
+  .sim-wrap { position: relative; }
+</style>
+
+<style id="ca-nav-style">
+  #ca-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: rgba(255,255,255,0.96); border-bottom: 1px solid #000;
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 0.4rem 1.1rem; font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
+    font-size: 0.65rem; color: #374151; backdrop-filter: blur(4px);
+  }
+  #ca-nav a { color: #b91c1c; text-decoration: none; }
+  #ca-nav a:hover { text-decoration: underline; }
+  #ca-nav .ca-vname { font-weight: 500; color: #111; }
+  #ca-nav .ca-right { margin-left: auto; color: #9ca3af; font-size: 0.58rem; }
+  body { padding-top: 32px !important; }
+</style>
+</head>
+<body>
+<div id="ca-nav">
+  <a href="index.html">↩ gallery</a>
+  <span>·</span>
+  <a href="v5.html">← prev</a>
+  <span class="ca-vname">v6: Voronoi Foam Topology</span>
+  <a href="v7.html">next →</a>
+  <span class="ca-right">FREED-CA · wellposedness.github.io/FREED-CA</span>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="nav"><a href="index.html">← FREED</a></div>
+    <h1>Freed's Law — The Game of Truth</h1>
+    <div class="sub">Voronoi foam topology. Each cell occupies exactly the territory it can defend thermodynamically. Boundaries are pressure equilibria, not walls. Hidden physics: Mandelbrot. Two modes: evolution only, or full RSA kernel.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btn-play" onclick="togglePlay()">▶ PLAY</button>
+    <button class="btn" onclick="stepOnce()">STEP</button>
+    <button class="btn" onclick="resetSim()">RESET</button>
+    <button class="btn" id="btn-mode" onclick="toggleMode()">○ EVOLVE ONLY</button>
+    <div class="speed-wrap">
+      SPEED <input type="range" id="speed" min="1" max="20" value="8">
+    </div>
+  </div>
+
+  <div class="sim-wrap">
+    <canvas id="canvas"></canvas>
+    <div id="init-overlay">BUILDING FOAM TOPOLOGY…</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-row"><span class="label">Generation</span><span class="value accent" id="stat-gen">0</span></div>
+    <div class="stat-row"><span class="label">Alive Cells</span><span class="value" id="stat-alive">—</span></div>
+    <div class="stat-row"><span class="label">Avg Energy</span><span class="value" id="stat-energy">—</span></div>
+    <div class="stat-row"><span class="label">Avg Error <span style="font-size:0.6rem;opacity:0.7">(break-even 0.50)</span></span><span class="value" id="stat-error">—</span></div>
+    <div class="stat-row"><span class="label">Avg Complexity <span style="font-size:0.6rem;opacity:0.7">(L1 weight norm)</span></span><span class="value" id="stat-complex">—</span></div>
+    <div class="stat-row"><span class="label">Boundary cells <span style="font-size:0.6rem;opacity:0.7">(near fractal edge — harder to predict)</span></span><span class="value" id="stat-boundary">—</span></div>
+    <div class="stat-row"><span class="label">Avg neighbors <span style="font-size:0.6rem;opacity:0.7">(foam valence)</span></span><span class="value" id="stat-valence">—</span></div>
+    <div class="stat-row"><span class="label">Zoom level</span><span class="value" id="stat-zoom">0 (1×)</span></div>
+    <div class="stat-row"><span class="label">Survival rate this level</span><span class="value" id="stat-survival">100%</span></div>
+    <div class="stat-row"><span class="label">Compression ratio <span style="font-size:0.6rem;opacity:0.7">(survivors L1 / level-start L1)</span></span><span class="value" id="stat-compress-r">—</span></div>
+    <div class="stat-row"><span class="label">Avg error at level start</span><span class="value" id="stat-err-start">—</span></div>
+    <div class="stat-row"><span class="label">Reproductions</span><span class="value" id="stat-repro">0</span></div>
+    <div class="stat-row"><span class="label">Deaths</span><span class="value" id="stat-deaths">0</span></div>
+    <div class="stat-row"><span class="label">Mode</span><span class="value" id="stat-mode">EVOLVE ONLY</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Color Legend — Error × Complexity</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#080808;border:1px solid #333"></div>Dead — no model</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#7f1d1d"></div>Deep red — overfitting</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ea580c"></div>Orange — underfitting</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ca8a04"></div>Yellow — exploring</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#16a34a"></div>Green — accurate but expensive</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#06b6d4"></div>Cyan — compression attractor</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f8fafc;border:1px solid #ccc"></div>White — reproducing</div>
+    </div>
+  </div>
+
+  <div class="section theory">
+    <div class="section-title">What This Is</div>
+    <p>
+      A Voronoi foam: each cell occupies exactly the territory closest to its seed point —
+      the minimum energy partition of space. Boundaries aren't walls; they're equilibria
+      between competing pressure gradients. No cell drifts off the edge because there is
+      no edge, only neighboring pressure. This is γ=1 expressed as geometry.
+    </p>
+    <p>
+      The hidden physics is the Mandelbrot set: z<sub>n+1</sub> = z²<sub>n</sub> + c.
+      Each cell's seed maps to a point c in the complex plane. Its true state is the escape
+      velocity band. Each step the viewport zooms 0.5% toward c = −0.75 + 0.1i
+      (cardioid/bulb boundary — aperiodic at every scale). Cells see their Voronoi
+      neighbors' bands and predict their own next band. Prediction error costs energy. Inaccuracy kills.
+    </p>
+    <div class="law">
+      ∃R(t) → ∃M₀ : dS(M<sub>R</sub>,t)/dt &gt; 0
+      <div class="sub-law">Cells near the fractal boundary face irreducible prediction difficulty. Cyan cells found the compressed rule.</div>
+    </div>
+    <p>
+      Cell color encodes position in the <em>error × complexity</em> tradeoff space.
+      Cyan: low error, low weight norm — compression attractor, optimal.
+      Deep red: large model, wrong predictions — maximum entropy production.
+      The foam topology means reproduction spreads into adjacent pressure-zones, not
+      grid positions — a cell colonizes its thermodynamic neighbors.
+    </p>
+    <p style="color:var(--muted);font-family:var(--mono);font-size:0.78rem;line-height:1.6">
+      Topology: ~220 Voronoi cells, Lloyd-relaxed (2 passes) for equal-pressure distribution.
+      Neighbors: cells sharing a Voronoi boundary edge (avg ~6, Plateau's law).
+      Hidden physics: z_{n+1} = z²_n + c, max 100 iterations. Zoom target: c = −0.75 + 0.1i.
+      Two modes: <em>Evolve Only</em> — Darwinian selection. <em>Evolve+Learn</em> — adds per-step delta rule, closing the ADJUST step.
+    </p>
+  </div>
+
+</div>
+
+<script>
+// ── RSA-Omega: The Game of Truth — Voronoi Foam Topology ─────────────────────
+// David Harry Freed. Voronoi upgrade: each cell occupies territory it can
+// thermodynamically defend. Boundaries are pressure equilibria, not walls.
+
+const N_CELLS   = 220;
+const MAX_NBRS  = 16;   // max neighbors per Voronoi cell (typical ~6, Plateau's law)
+const INIT_E    = 100;
+const GAIN_BASE = 3.0;
+const COST_BASE = 1.0;
+const ERR_FACTOR= 4.0;
+const REPRO_THR = 150;
+const REPRO_COST= 50;
+const MUT_RATE  = 0.05;
+const MUT_STR   = 0.20;
+const MAX_E     = 300;
+const LEARN_RATE= 0.10;
+const MB_MAX    = 100;
+
+const CT_R = -0.75, CT_I = 0.1;
+const ZOOM_PER_STEP = 0.995;
+const ZOOM_STEPS    = 140;
+
+// Canvas / Voronoi layout (set in initCanvas)
+let canvasW, canvasH;
+let seedX, seedY;    // Float32Array[N_CELLS] — seed positions in canvas pixels
+let voronoiMap;      // Int32Array[canvasW*canvasH] — pixel → cell index
+let nbrList;         // Int32Array[N_CELLS * MAX_NBRS] — neighbor indices (-1 = empty)
+let nbrCount;        // Int32Array[N_CELLS]
+let imgData;         // pre-allocated ImageData
+
+// Per-cell simulation state
+let energy, cellState, nextState, cellError, cellRepro, cellBand;
+let weights;         // Float32Array[N_CELLS * MAX_NBRS] — one weight per neighbor slot
+let cReal, cImag;
+
+// Zoom metrics
+let viewRMin, viewRMax, viewIMin, viewIMax;
+let zoomStep = 0, zoomLevel = 0;
+let zoomAliveStart = 0, zoomL1Start = 1.0;
+let zoomSurvivalRate = 100, zoomCompressRatio = 1.0, zoomErrAtStart = 0;
+
+let generation = 0, totalRepro = 0, totalDeaths = 0;
+let running = false, animId = null;
+let lastError = 0;
+let learningMode = false;
+let avgValence = 6;
+
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+function sigmoid(x) { return 1.0 / (1.0 + Math.exp(-x)); }
+
+function escapeband(cr, ci) {
+  let zr = 0, zi = 0;
+  for (let n = 0; n < MB_MAX; n++) {
+    const zr2 = zr*zr - zi*zi + cr;
+    zi = 2*zr*zi + ci;
+    zr = zr2;
+    if (zr*zr + zi*zi > 4) {
+      if (n <  5) return 6;
+      if (n < 15) return 5;
+      if (n < 30) return 4;
+      if (n < 50) return 3;
+      if (n < 70) return 2;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+// ── Voronoi construction ──────────────────────────────────────────────────────
+
+function buildVoronoiMap() {
+  // Grid-accelerated nearest-neighbor: O(N_CELLS * tile_area) instead of O(N_CELLS * W * H)
+  const GW = 10, GH = 6;
+  const TW = Math.ceil(canvasW / GW), TH = Math.ceil(canvasH / GH);
+  const buckets = Array.from({length: GW * GH}, () => []);
+
+  for (let i = 0; i < N_CELLS; i++) {
+    const gx = Math.min(GW - 1, Math.floor(seedX[i] / TW));
+    const gy = Math.min(GH - 1, Math.floor(seedY[i] / TH));
+    buckets[gy * GW + gx].push(i);
+  }
+
+  for (let py = 0; py < canvasH; py++) {
+    const gy0 = Math.max(0, Math.floor(py / TH) - 1);
+    const gy1 = Math.min(GH - 1, Math.floor(py / TH) + 1);
+    for (let px = 0; px < canvasW; px++) {
+      const gx0 = Math.max(0, Math.floor(px / TW) - 1);
+      const gx1 = Math.min(GW - 1, Math.floor(px / TW) + 1);
+      let best = 0, bestD = Infinity;
+      for (let gy = gy0; gy <= gy1; gy++) {
+        for (let gx = gx0; gx <= gx1; gx++) {
+          const bucket = buckets[gy * GW + gx];
+          for (let k = 0; k < bucket.length; k++) {
+            const ii = bucket[k];
+            const dx = px - seedX[ii], dy = py - seedY[ii];
+            const d = dx * dx + dy * dy;
+            if (d < bestD) { bestD = d; best = ii; }
+          }
+        }
+      }
+      voronoiMap[py * canvasW + px] = best;
+    }
+  }
+}
+
+function lloydRelax(iters) {
+  const sumX = new Float64Array(N_CELLS);
+  const sumY = new Float64Array(N_CELLS);
+  const cnt  = new Int32Array(N_CELLS);
+
+  for (let iter = 0; iter < iters; iter++) {
+    buildVoronoiMap();
+    sumX.fill(0); sumY.fill(0); cnt.fill(0);
+
+    for (let py = 0; py < canvasH; py++) {
+      for (let px = 0; px < canvasW; px++) {
+        const ci = voronoiMap[py * canvasW + px];
+        sumX[ci] += px; sumY[ci] += py; cnt[ci]++;
+      }
+    }
+    for (let i = 0; i < N_CELLS; i++) {
+      if (cnt[i] > 0) { seedX[i] = sumX[i] / cnt[i]; seedY[i] = sumY[i] / cnt[i]; }
+    }
+  }
+  buildVoronoiMap(); // final map with relaxed seeds
+}
+
+function buildNeighbors() {
+  nbrList  = new Int32Array(N_CELLS * MAX_NBRS).fill(-1);
+  nbrCount = new Int32Array(N_CELLS);
+  const seen = new Set();
+
+  function addEdge(a, b) {
+    const key = (a < b) ? a * N_CELLS + b : b * N_CELLS + a;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (nbrCount[a] < MAX_NBRS) nbrList[a * MAX_NBRS + nbrCount[a]++] = b;
+    if (nbrCount[b] < MAX_NBRS) nbrList[b * MAX_NBRS + nbrCount[b]++] = a;
+  }
+
+  for (let py = 0; py < canvasH; py++) {
+    for (let px = 0; px < canvasW - 1; px++) {
+      const a = voronoiMap[py * canvasW + px];
+      const b = voronoiMap[py * canvasW + px + 1];
+      if (a !== b) addEdge(a, b);
+    }
+  }
+  for (let py = 0; py < canvasH - 1; py++) {
+    for (let px = 0; px < canvasW; px++) {
+      const a = voronoiMap[py * canvasW + px];
+      const b = voronoiMap[(py + 1) * canvasW + px];
+      if (a !== b) addEdge(a, b);
+    }
+  }
+
+  // Average valence (for stats display)
+  let vSum = 0;
+  for (let i = 0; i < N_CELLS; i++) vSum += nbrCount[i];
+  avgValence = (vSum / N_CELLS).toFixed(1);
+}
+
+// ── Canvas + full topology init ───────────────────────────────────────────────
+
+function initCanvas() {
+  const wrap = canvas.parentElement;
+  canvasW = wrap.clientWidth;
+  canvasH = Math.floor(Math.min(canvasW * 0.6, window.innerHeight * 0.55));
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  imgData = ctx.createImageData(canvasW, canvasH);
+
+  voronoiMap = new Int32Array(canvasW * canvasH);
+
+  // Scatter seeds with uniform random placement
+  seedX = new Float32Array(N_CELLS);
+  seedY = new Float32Array(N_CELLS);
+  for (let i = 0; i < N_CELLS; i++) {
+    seedX[i] = Math.random() * canvasW;
+    seedY[i] = Math.random() * canvasH;
+  }
+
+  lloydRelax(2);   // 2 passes → equal-pressure foam distribution
+  buildNeighbors();
+
+  document.getElementById('init-overlay').style.display = 'none';
+}
+
+// ── Simulation init ───────────────────────────────────────────────────────────
+
+function initSim() {
+  energy    = new Float32Array(N_CELLS);
+  cellState = new Float32Array(N_CELLS);
+  nextState = new Float32Array(N_CELLS);
+  cellError = new Float32Array(N_CELLS);
+  cellRepro = new Uint8Array(N_CELLS);
+  cellBand  = new Uint8Array(N_CELLS);
+  weights   = new Float32Array(N_CELLS * MAX_NBRS);
+  cReal     = new Float32Array(N_CELLS);
+  cImag     = new Float32Array(N_CELLS);
+
+  viewRMin = CT_R - 1.75; viewRMax = CT_R + 1.75;
+  viewIMin = CT_I - 1.25; viewIMax = CT_I + 1.25;
+  zoomStep = 0; zoomLevel = 0;
+  zoomSurvivalRate = 100; zoomCompressRatio = 1.0; zoomErrAtStart = 0;
+
+  const dR = viewRMax - viewRMin, dI = viewIMax - viewIMin;
+  let initL1Sum = 0;
+  for (let i = 0; i < N_CELLS; i++) {
+    cReal[i] = viewRMin + (seedX[i] / canvasW) * dR;
+    cImag[i] = viewIMin + (seedY[i] / canvasH) * dI;
+    const band = escapeband(cReal[i], cImag[i]);
+    cellBand[i]  = band;
+    cellState[i] = band / 6.0;
+    energy[i]    = INIT_E * (0.5 + Math.random());
+    const nc = nbrCount[i];
+    for (let k = 0; k < nc; k++) {
+      const w = (Math.random() - 0.5) * 0.5;
+      weights[i * MAX_NBRS + k] = w;
+      initL1Sum += Math.abs(w);
+    }
+  }
+  zoomAliveStart = N_CELLS;
+  zoomL1Start    = N_CELLS > 0 ? initL1Sum / N_CELLS : 1.0;
+
+  generation = 0; totalRepro = 0; totalDeaths = 0; lastError = 0;
+}
+
+// ── Simulation step ───────────────────────────────────────────────────────────
+
+function step() {
+  cellRepro.fill(0);
+
+  // Zoom viewport
+  const halfR = (viewRMax - viewRMin) * 0.5 * ZOOM_PER_STEP;
+  const halfI = (viewIMax - viewIMin) * 0.5 * ZOOM_PER_STEP;
+  viewRMin = CT_R - halfR; viewRMax = CT_R + halfR;
+  viewIMin = CT_I - halfI; viewIMax = CT_I + halfI;
+
+  // Recompute c values and ground truth bands from new viewport
+  const dR = viewRMax - viewRMin, dI = viewIMax - viewIMin;
+  for (let i = 0; i < N_CELLS; i++) {
+    cReal[i] = viewRMin + (seedX[i] / canvasW) * dR;
+    cImag[i] = viewIMin + (seedY[i] / canvasH) * dI;
+    const band = escapeband(cReal[i], cImag[i]);
+    cellBand[i]   = band;
+    nextState[i]  = band / 6.0;
+  }
+
+  // Predict via Voronoi neighbor weights; update energy
+  let errSum = 0, errCnt = 0;
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] <= 0) continue;
+    const nc = nbrCount[i];
+    let pred = 0;
+    for (let k = 0; k < nc; k++) {
+      pred += weights[i * MAX_NBRS + k] * cellState[nbrList[i * MAX_NBRS + k]];
+    }
+    pred = sigmoid(pred);
+
+    const errSigned = pred - nextState[i];
+    const err = Math.abs(errSigned);
+    cellError[i] = err;
+    energy[i] = Math.min(energy[i] + GAIN_BASE - COST_BASE - err * ERR_FACTOR, MAX_E);
+
+    if (learningMode) {
+      const dpred = pred * (1.0 - pred);
+      for (let k = 0; k < nc; k++) {
+        const xi = cellState[nbrList[i * MAX_NBRS + k]];
+        weights[i * MAX_NBRS + k] -= LEARN_RATE * errSigned * dpred * xi;
+      }
+    }
+    errSum += err; errCnt++;
+  }
+  lastError = errCnt > 0 ? errSum / errCnt : 0;
+
+  // Apply next states
+  for (let i = 0; i < N_CELLS; i++) cellState[i] = nextState[i];
+
+  // Kill dead cells — randomize weights but keep topology
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] <= 0) {
+      energy[i] = 0;
+      const nc = nbrCount[i];
+      for (let k = 0; k < nc; k++)
+        weights[i * MAX_NBRS + k] = (Math.random() - 0.5) * 0.5;
+      totalDeaths++;
+    }
+  }
+
+  // Reproduction into weakest Voronoi neighbor
+  const reproList = [];
+  for (let i = 0; i < N_CELLS; i++)
+    if (energy[i] >= REPRO_THR) reproList.push(i);
+  for (let k = reproList.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [reproList[k], reproList[j]] = [reproList[j], reproList[k]];
+  }
+  for (const i of reproList) {
+    if (energy[i] < REPRO_THR) continue;
+    const nc = nbrCount[i];
+    if (nc === 0) continue;
+    let bestT = -1, minE = energy[i];
+    for (let k = 0; k < nc; k++) {
+      const ni = nbrList[i * MAX_NBRS + k];
+      if (energy[ni] < minE) { minE = energy[ni]; bestT = ni; }
+    }
+    if (bestT >= 0) {
+      const bnc = nbrCount[bestT];
+      for (let k = 0; k < bnc; k++) {
+        const srcW = k < nc ? weights[i * MAX_NBRS + k] : (Math.random() - 0.5) * 0.5;
+        let nw = srcW;
+        if (Math.random() < MUT_RATE) nw += (Math.random() - 0.5) * 2 * MUT_STR;
+        weights[bestT * MAX_NBRS + k] = nw;
+      }
+      energy[bestT] = INIT_E * 0.5;
+      energy[i] -= REPRO_COST;
+      cellRepro[i] = 1;
+      totalRepro++;
+    }
+  }
+
+  // Zoom level metrics
+  zoomStep++;
+  const newZoomLevel = Math.floor(zoomStep / ZOOM_STEPS);
+  if (newZoomLevel > zoomLevel) {
+    let aliveNow = 0, l1Now = 0;
+    for (let i = 0; i < N_CELLS; i++) {
+      if (energy[i] > 0) {
+        aliveNow++;
+        const nc = nbrCount[i];
+        for (let k = 0; k < nc; k++) l1Now += Math.abs(weights[i * MAX_NBRS + k]);
+      }
+    }
+    zoomSurvivalRate  = zoomAliveStart > 0 ? Math.round(100 * aliveNow / zoomAliveStart) : 0;
+    const avgL1Now    = aliveNow > 0 ? l1Now / aliveNow : 1.0;
+    zoomCompressRatio = zoomL1Start > 0.001 ? avgL1Now / zoomL1Start : 1.0;
+    zoomErrAtStart    = lastError;
+    zoomAliveStart    = aliveNow;
+    zoomL1Start       = avgL1Now;
+    zoomLevel         = newZoomLevel;
+  }
+
+  generation++;
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
+function draw() {
+  const d = imgData.data;
+  const ERR_LOW = 0.35, ERR_HIGH = 0.50, COMPLEX_THRESH = 1.2;
+
+  // Pre-compute per-cell color
+  const cellR = new Uint8Array(N_CELLS);
+  const cellG = new Uint8Array(N_CELLS);
+  const cellB = new Uint8Array(N_CELLS);
+
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] <= 0) { cellR[i] = 8; cellG[i] = 8; cellB[i] = 8; continue; }
+    if (cellRepro[i])   { cellR[i] = 248; cellG[i] = 250; cellB[i] = 252; continue; }
+    const err = cellError[i];
+    let L1 = 0;
+    const nc = nbrCount[i];
+    for (let k = 0; k < nc; k++) L1 += Math.abs(weights[i * MAX_NBRS + k]);
+    const highComplex = L1 > COMPLEX_THRESH;
+    const lowErr = err < ERR_LOW, highErr = err >= ERR_HIGH;
+
+    let R, G, B;
+    if      (lowErr && !highComplex) { R = 6;   G = 182; B = 212; }
+    else if (lowErr &&  highComplex) { R = 22;  G = 163; B = 74;  }
+    else if (!highErr)               { R = 202; G = 138; B = 4;   }
+    else if (!highComplex)           { R = 234; G = 88;  B = 12;  }
+    else                             { R = 127; G = 29;  B = 29;  }
+    cellR[i] = R; cellG[i] = G; cellB[i] = B;
+  }
+
+  // Render: fill from voronoiMap; draw cell boundaries as black
+  for (let py = 0; py < canvasH; py++) {
+    const row = py * canvasW;
+    for (let px = 0; px < canvasW; px++) {
+      const pi = (row + px) * 4;
+      const ci = voronoiMap[row + px];
+
+      // Boundary: pixel is on edge if left or top neighbor belongs to different cell
+      const isBoundary =
+        (px > 0 && voronoiMap[row + px - 1] !== ci) ||
+        (py > 0 && voronoiMap[row - canvasW + px] !== ci);
+
+      if (isBoundary) {
+        d[pi] = 0; d[pi+1] = 0; d[pi+2] = 0; d[pi+3] = 255;
+      } else {
+        d[pi] = cellR[ci]; d[pi+1] = cellG[ci]; d[pi+2] = cellB[ci]; d[pi+3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function updateStats() {
+  let alive = 0, eSum = 0, cSum = 0, boundaryCells = 0;
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] > 0) {
+      alive++; eSum += energy[i];
+      const nc = nbrCount[i];
+      for (let k = 0; k < nc; k++) cSum += Math.abs(weights[i * MAX_NBRS + k]);
+    }
+    if (cellBand[i] >= 1 && cellBand[i] <= 2) boundaryCells++;
+  }
+  const breakEven = (GAIN_BASE - COST_BASE) / ERR_FACTOR;
+  const errEl = document.getElementById('stat-error');
+  errEl.textContent = lastError.toFixed(3);
+  errEl.style.color = lastError < breakEven ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('stat-gen').textContent      = generation;
+  document.getElementById('stat-alive').textContent    = alive;
+  document.getElementById('stat-energy').textContent   = alive > 0 ? (eSum/alive).toFixed(1) : '0';
+  document.getElementById('stat-complex').textContent  = alive > 0 ? (cSum/alive).toFixed(2) : '0';
+  document.getElementById('stat-boundary').textContent = boundaryCells;
+  document.getElementById('stat-valence').textContent  = avgValence;
+  document.getElementById('stat-zoom').textContent     = `${zoomLevel} (${Math.pow(2,zoomLevel).toFixed(0)}×)`;
+  document.getElementById('stat-survival').textContent = `${zoomSurvivalRate}%`;
+  document.getElementById('stat-compress-r').textContent = zoomCompressRatio.toFixed(3);
+  document.getElementById('stat-err-start').textContent  = zoomErrAtStart.toFixed(3);
+  document.getElementById('stat-repro').textContent    = totalRepro;
+  document.getElementById('stat-deaths').textContent   = totalDeaths;
+  document.getElementById('stat-mode').textContent     = learningMode ? 'EVOLVE + LEARN' : 'EVOLVE ONLY';
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+
+function loop() {
+  if (!running) return;
+  const speed = parseInt(document.getElementById('speed').value);
+  const stepsPerFrame = Math.max(1, Math.floor(speed / 4));
+  for (let i = 0; i < stepsPerFrame; i++) step();
+  draw();
+  updateStats();
+  animId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('btn-play');
+  if (running) {
+    btn.textContent = '■ PAUSE'; btn.classList.add('active');
+    animId = requestAnimationFrame(loop);
+  } else {
+    btn.textContent = '▶ PLAY'; btn.classList.remove('active');
+    if (animId) cancelAnimationFrame(animId);
+  }
+}
+
+function stepOnce() {
+  if (running) return;
+  step(); draw(); updateStats();
+}
+
+function resetSim() {
+  if (running) togglePlay();
+  initSim(); draw(); updateStats();
+}
+
+function toggleMode() {
+  learningMode = !learningMode;
+  const btn = document.getElementById('btn-mode');
+  btn.textContent = learningMode ? '⟳ EVOLVE+LEARN' : '○ EVOLVE ONLY';
+  btn.classList.toggle('active', learningMode);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// Voronoi construction is synchronous but fast (<300ms). Run after paint so
+// the overlay renders before the blocking work begins.
+requestAnimationFrame(() => {
+  initCanvas();
+  initSim();
+  draw();
+  updateStats();
+});
+</script>
+</body>
+</html>
