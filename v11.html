@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREED-CA v11 — Collective Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #ffffff;
+    --surface: #f7f7f5;
+    --border:  #e0ddd8;
+    --accent:  #b91c1c;
+    --green:   #16a34a;
+    --amber:   #b45309;
+    --blue:    #1d4ed8;
+    --red:     #dc2626;
+    --text:    #111111;
+    --muted:   #374151;
+    --mono:    'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --serif:   'Cormorant Garamond', 'Palatino Linotype', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100vh; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: var(--serif); font-weight: 300;
+    font-size: 15px; line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .hud-shell { display: flex; flex-direction: column; height: 100vh; }
+  .hud-top {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.55rem 1.4rem; border-bottom: 1px solid #000;
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  .hud-title { font-family: var(--serif); font-weight: 300; font-size: 1.5rem; letter-spacing: 0.18em; color: var(--accent); }
+  .hud-sub   { font-family: var(--serif); font-weight: 300; font-size: 0.82rem; color: var(--muted); }
+  .hud-nav   { margin-left: auto; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); letter-spacing: 0.06em; }
+  .hud-grid  { display: grid; grid-template-columns: 28fr 44fr 28fr; flex: 1; overflow: hidden; min-height: 0; }
+  .hud-panel { overflow-y: auto; padding: 0.9rem 1.1rem; border-right: 1px solid #000; min-height: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .hud-panel:last-child { border-right: none; }
+  .hud-footer {
+    border-top: 1px solid var(--border); padding: 0.35rem 1.4rem;
+    font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .panel-title {
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--text);
+    text-align: center; padding-bottom: 0.1rem; flex-shrink: 0;
+  }
+  .panel-subtitle {
+    font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.13em;
+    color: var(--muted); text-align: center; text-transform: uppercase;
+    opacity: 0.65; padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .panel-body p { font-family: var(--serif); font-weight: 300; font-size: 0.93rem; margin-bottom: 0.65rem; color: var(--text); line-height: 1.65; }
+  .panel-body p:last-child { margin-bottom: 0; }
+  .panel-body em { font-style: italic; }
+  .law { padding: 0.6rem 0.85rem; background: var(--surface); border: 1px solid var(--accent); font-family: var(--serif); font-weight: 300; font-size: 0.95rem; font-style: italic; }
+  .law .label { font-family: var(--mono); font-style: normal; color: var(--muted); font-size: 0.62rem; margin-bottom: 0.25rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .law .sub-law { font-family: var(--serif); font-weight: 300; font-size: 0.82rem; color: var(--muted); margin-top: 0.35rem; font-style: italic; }
+  .callout { font-family: var(--mono); font-size: 0.72rem; line-height: 1.65; background: var(--surface); border-left: 3px solid var(--border); padding: 0.6rem 0.85rem; color: var(--muted); }
+  .callout .callout-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+  .callout code { color: var(--text); }
+  .kv-grid { border: 1px solid var(--green); padding: 0 0.6rem; }
+  .kv-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.26rem 0; border-bottom: 1px solid var(--border); }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-row .label { font-family: var(--mono); color: var(--muted); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.07em; }
+  .kv-row .value { font-family: var(--mono); font-size: 0.78rem; color: var(--text); }
+  .kv-row .value.accent { color: var(--accent); font-weight: 600; }
+  .kv-row .value.green  { color: var(--green);  font-weight: 600; }
+  .section-divider { font-family: var(--mono); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; flex-shrink: 0; }
+  .sim-wrap { width: 100%; background: #080808; border: 1px solid var(--border); line-height: 0; position: relative; flex-shrink: 0; }
+  canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+  #init-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: #080808; color: #555; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; pointer-events: none; }
+  .controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+  .btn { padding: 0.3rem 0.75rem; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.07em; cursor: pointer; transition: background 0.12s, color 0.12s; }
+  .btn:hover, .btn.active { background: var(--accent); color: var(--bg); }
+  .speed-wrap { display: flex; align-items: center; gap: 0.4rem; font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
+  input[type=range] { accent-color: var(--accent); width: 70px; }
+  .stats { flex-shrink: 0; border: 1px solid var(--green); padding: 0 0.6rem; }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.22rem 0; border-bottom: 1px solid var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .label { font-family: var(--mono); color: var(--muted); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em; }
+  .stat-row .value { font-family: var(--mono); font-size: 0.76rem; color: var(--text); }
+  .stat-row .value.accent { color: var(--accent); font-weight: 600; }
+  .stat-row .value.green  { color: var(--green);  font-weight: 600; }
+  .hist-wrap { flex-shrink: 0; }
+  #hist-canvas  { display: block; width: 100%; height: 100px; background: var(--surface); border: 1px solid var(--border); }
+  #mort-canvas  { display: block; width: 100%; height: 64px;  background: var(--surface); border: 1px solid var(--border); margin-top: 2px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.45rem 0.9rem; flex-shrink: 0; }
+  .legend-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--mono); font-size: 0.61rem; color: var(--muted); }
+  .legend-swatch { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+  @media (max-width: 768px) {
+    html, body { height: auto; overflow: visible; }
+    .hud-shell { height: auto; min-height: 100vh; }
+    .hud-grid { grid-template-columns: 1fr; overflow: visible; flex: none; }
+    .hud-panel { overflow-y: visible; min-height: auto; border-right: none; border-bottom: 1px solid #000; }
+    .hud-panel:last-child { border-bottom: none; }
+    .hud-top { padding: 0.6rem 0.9rem; }
+    .hud-title { font-size: 1.15rem; }
+  }
+</style>
+<style id="ca-nav-style">
+  #ca-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: rgba(255,255,255,0.96); border-bottom: 1px solid #000;
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 0.4rem 1.1rem; font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
+    font-size: 0.65rem; color: #374151; backdrop-filter: blur(4px);
+  }
+  #ca-nav a { color: #b91c1c; text-decoration: none; }
+  #ca-nav a:hover { text-decoration: underline; }
+  #ca-nav .ca-vname { font-weight: 500; color: #111; }
+  #ca-nav .ca-right { margin-left: auto; color: #9ca3af; font-size: 0.58rem; }
+  body { padding-top: 32px !important; }
+</style>
+</head>
+<body>
+<div id="ca-nav">
+  <a href="index.html">↩ gallery</a>
+  <span>·</span>
+  <a href="v10.html">← prev</a>
+  <span class="ca-vname">v11: Collective Memory</span>
+  <span style="color:#d1d5db">next →</span>
+  <span class="ca-right">FREED-CA · wellposedness.github.io/FREED-CA</span>
+</div>
+
+<div class="hud-shell">
+  <div class="hud-top">
+    <span class="hud-title">RSA</span>
+    <span class="hud-sub">v11 — Collective Memory Without Individual Memory</span>
+    <div class="hud-nav"><a href="index.html">← back to gallery</a></div>
+  </div>
+
+  <div class="hud-grid">
+
+    <!-- LEFT PANEL -->
+    <div class="hud-panel">
+      <div class="panel-title">The Argument</div>
+      <div class="panel-subtitle">Collective Memory Without Individual Cells Having Memory</div>
+
+      <div class="law">
+        <div class="label">Freed's Law</div>
+        ∃R(t) → ∃M₀ : dS(M<sub>R</sub>,t)/dt &gt; 0
+        <div class="sub-law">To reason is to exist physically. To think is to burn. To be is to be built.</div>
+      </div>
+
+      <div class="panel-body">
+        <p>
+          v11 adds three mechanisms to the v10 six-type foam. The hidden
+          Mandelbrot physics now shifts aperiodically — not on a fixed schedule,
+          but driven by a sum of incommensurable sine waves that never repeats.
+          Each shift is a genuine environmental shock.
+        </p>
+      </div>
+
+      <div class="section-divider">Six Cognitive Types (unchanged)</div>
+      <div class="panel-body">
+        <p>
+          Two axes: <em>loop depth</em> (Builder → Navigator → Drifter) and
+          <em>grounding</em> (Physics vs Symbol). All six types from v10 are
+          preserved exactly.
+        </p>
+        <p>
+          <em style="color:#06b6d4">Physics Builders</em> (cyan) —
+          <em style="color:#a855f7">Symbol Builders</em> (violet) —
+          <em style="color:#16a34a">Physics Navigators</em> (green) —
+          <em style="color:#d97706">Symbol Navigators</em> (amber) —
+          <em style="color:#ea580c">Physics Drifters</em> (orange) —
+          <em style="color:#f43f5e">Symbol Drifters</em> (rose).
+        </p>
+      </div>
+
+      <div class="section-divider">Collective Memory Hypothesis</div>
+      <div class="panel-body">
+        <p>
+          No individual cell has memory. Each cell's state is purely its current
+          energy and type. Yet the <em>population</em> accumulates information
+          about past environments through differential survival: perturbations
+          that kill Symbol cells select toward Physics cells, and Physics cells
+          are less vulnerable to subsequent perturbations.
+        </p>
+        <p>
+          The measurable prediction: <em>mortality after perturbation N &lt;
+          mortality after perturbation 1</em>. The distribution shifts. The
+          ecosystem remembers what the cells cannot.
+        </p>
+        <p>
+          This is not learning. No cell updates a weight. It is selection
+          pressure leaving a structural trace — information stored in the
+          type histogram, not in any individual.
+        </p>
+      </div>
+
+      <div class="section-divider">Resource Topology</div>
+      <div class="panel-body">
+        <p>
+          Energy is no longer uniform. Six quasi-stable hotspots drift slowly
+          across the field, each providing a local gain bonus to nearby cells.
+          Hotspots make the foam heterogeneous — cells near a hotspot survive
+          longer, creating spatial structure independent of the Mandelbrot bands.
+        </p>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="hud-panel">
+      <div class="panel-title">Simulation</div>
+      <div class="panel-subtitle">Voronoi Foam · Aperiodic Mandelbrot Shocks · Drifting Resource Hotspots</div>
+
+      <div class="controls">
+        <button class="btn" id="btn-play" onclick="togglePlay()">▶ PLAY</button>
+        <button class="btn" onclick="stepOnce()">STEP</button>
+        <button class="btn" onclick="resetSim()">RESET</button>
+        <button class="btn" id="btn-mode" onclick="toggleMode()">○ EVOLVE ONLY</button>
+        <div class="speed-wrap">
+          SPEED <input type="range" id="speed" min="1" max="20" value="8">
+        </div>
+      </div>
+
+      <div class="sim-wrap">
+        <canvas id="canvas"></canvas>
+        <div id="init-overlay">BUILDING FOAM TOPOLOGY…</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-row"><span class="label">Generation</span><span class="value accent" id="stat-gen">0</span></div>
+        <div class="stat-row"><span class="label">Alive</span><span class="value" id="stat-alive">—</span></div>
+        <div class="stat-row"><span class="label">Avg Error <span style="font-size:0.58rem;opacity:0.7">(break-even 0.50)</span></span><span class="value" id="stat-error">—</span></div>
+        <div class="stat-row"><span class="label">Avg Energy</span><span class="value" id="stat-energy">—</span></div>
+        <div class="stat-row"><span class="label">Perturbations fired</span><span class="value accent" id="stat-perturb">0</span></div>
+        <div class="stat-row"><span class="label">Last shock mortality</span><span class="value" id="stat-mortality">—</span></div>
+        <div class="stat-row"><span class="label">Mortality trend</span><span class="value green" id="stat-trend">—</span></div>
+        <div class="stat-row"><span class="label">Next shock in ~</span><span class="value" id="stat-nextp">—</span></div>
+        <div class="stat-row"><span class="label">Zoom target</span><span class="value" id="stat-target">cardioid edge</span></div>
+        <div class="stat-row"><span class="label">Reproductions / Deaths</span><span class="value" id="stat-repro-deaths">0 / 0</span></div>
+        <div class="stat-row"><span class="label">Mode</span><span class="value" id="stat-mode">EVOLVE ONLY</span></div>
+      </div>
+
+      <div class="hist-wrap">
+        <canvas id="hist-canvas"></canvas>
+        <canvas id="mort-canvas"></canvas>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#080808;border:1px solid #333"></div>Dead</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#06b6d4"></div>Physics Builder</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#a855f7"></div>Symbol Builder</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#16a34a"></div>Physics Navigator</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#d97706"></div>Symbol Navigator</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#ea580c"></div>Physics Drifter</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#f43f5e"></div>Symbol Drifter</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#fff7ed;border:1px solid #f97316"></div>Hotspot</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#f8fafc;border:1px solid #ccc"></div>Reproducing</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="hud-panel">
+      <div class="panel-title">Hidden Physics</div>
+      <div class="panel-subtitle">What the Cells Don't Know</div>
+
+      <div class="callout">
+        <div class="callout-label">Mandelbrot — aperiodic shocks</div>
+        <code>z<sub>n+1</sub> = z²<sub>n</sub> + c · max 100 iter · 7 bands</code><br>
+        <code>noise(t) = sin(0.019t) + sin(0.027t) + sin(0.043t)</code><br>
+        <code>shock fires when noise &gt; 0.65 · cooldown 80 steps</code><br>
+        <code>zoom target jumps to next boundary point</code>
+      </div>
+
+      <div class="section-divider">Shock Targets (cycled)</div>
+      <div class="kv-grid">
+        <div class="kv-row"><span class="label">1. cardioid edge</span><span class="value">−0.75 + 0.1i</span></div>
+        <div class="kv-row"><span class="label">2. dense spiral</span><span class="value">−0.727 + 0.189i</span></div>
+        <div class="kv-row"><span class="label">3. period-3 island</span><span class="value">−0.123 + 0.745i</span></div>
+        <div class="kv-row"><span class="label">4. period-3 real</span><span class="value">−1.755 + 0.0i</span></div>
+        <div class="kv-row"><span class="label">5. antenna tip</span><span class="value">0.282 + 0.530i</span></div>
+        <div class="kv-row"><span class="label">6. seahorse</span><span class="value">−0.560 + 0.642i</span></div>
+      </div>
+
+      <div class="section-divider">Resource Hotspots</div>
+      <div class="kv-grid">
+        <div class="kv-row"><span class="label">Hotspot count</span><span class="value">6</span></div>
+        <div class="kv-row"><span class="label">Radius</span><span class="value">~90px</span></div>
+        <div class="kv-row"><span class="label">Peak bonus</span><span class="value">+2.0 energy/step</span></div>
+        <div class="kv-row"><span class="label">Drift speed</span><span class="value">0.25 px/step</span></div>
+        <div class="kv-row"><span class="label">Hotspot strength noise</span><span class="value">slow oscillation</span></div>
+      </div>
+
+      <div class="section-divider">Type Parameters</div>
+      <div class="kv-grid">
+        <div class="kv-row"><span class="label" style="color:#06b6d4">Phys Builder cost/repro</span><span class="value">1.5 / 200</span></div>
+        <div class="kv-row"><span class="label" style="color:#a855f7">Sym Builder cost/repro</span><span class="value">1.5 / 200</span></div>
+        <div class="kv-row"><span class="label" style="color:#16a34a">Phys Nav cost/repro</span><span class="value">0.8 / 150</span></div>
+        <div class="kv-row"><span class="label" style="color:#d97706">Sym Nav cost/repro</span><span class="value">0.8 / 150</span></div>
+        <div class="kv-row"><span class="label" style="color:#ea580c">Phys Drifter cost/repro</span><span class="value">0.4 / 100</span></div>
+        <div class="kv-row"><span class="label" style="color:#f43f5e">Sym Drifter cost/repro</span><span class="value">0.4 / 100</span></div>
+        <div class="kv-row"><span class="label">Symbol map lag</span><span class="value">0.65</span></div>
+        <div class="kv-row"><span class="label">Divergence tax/unit</span><span class="value">2.5</span></div>
+        <div class="kv-row"><span class="label">Depth mut / Ground mut</span><span class="value">5% / 3%</span></div>
+        <div class="kv-row"><span class="label">Base gain / step</span><span class="value">3.0 + hotspot</span></div>
+        <div class="kv-row"><span class="label">Foam cells</span><span class="value">220</span></div>
+      </div>
+
+      <div class="section-divider">Perturbation Response</div>
+      <div class="panel-body">
+        <p>
+          Each shock rearranges the escape bands every cell reads. Cells that
+          were predicting well suddenly face a different landscape. Symbol cells
+          are hit hardest — their internal map lags behind the new reality.
+        </p>
+        <p>
+          The mortality bar chart below the Zipf histogram shows each shock's
+          death toll. A downward trend is the signal: the population has shifted
+          toward types that survive environmental discontinuity. The ecosystem has
+          stored information about the pattern of past shocks.
+        </p>
+        <p>
+          No cell remembers shock 1. The memory lives only in the type histogram.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hud-footer">
+    <span>Architect: David Harry Freed — mail carrier, Olney Maryland &nbsp;·&nbsp; v11 Apr 2026</span>
+    <span>FREED — autonomous science daemon &nbsp;·&nbsp; <a href="index.html">← back to gallery</a></span>
+  </div>
+</div>
+
+<script>
+// ── FREED-CA v11: Collective Memory ──────────────────────────────────────────
+// Three additions over v10:
+// 1. Aperiodic Mandelbrot shocks — noise-driven zoom target jumps
+// 2. Drifting resource hotspots — energy clusters in quasi-stable positions
+// 3. Perturbation mortality tracking — diminishing mortality as adaptation signal
+
+// ── Cell type encoding (unchanged from v10) ───────────────────────────────────
+const N_TYPES  = 6;
+function typeDepth(t)   { return Math.floor(t/2); }
+function typeGround(t)  { return t % 2; }
+function makeType(d, g) { return d*2 + g; }
+
+const TYPE_COST    = [ 1.5,  1.5,  0.8,  0.8,  0.4,  0.4 ];
+const TYPE_ERR_F   = [ 5.0,  5.0,  3.5,  3.5,  3.0,  3.0 ];
+const TYPE_REPRO_T = [ 200,  200,  150,  150,  100,  100  ];
+const TYPE_REPRO_C = [  70,   70,   50,   50,   30,   30  ];
+const TYPE_NBR_D   = [ 999,  999,    3,    3,    0,    0   ];
+
+const TYPE_MUT   = 0.05;
+const GROUND_MUT = 0.03;
+const SYMBOL_LAG = 0.65;
+const GROUND_TAX = 2.5;
+
+// ── Simulation constants ──────────────────────────────────────────────────────
+const N_CELLS    = 220;
+const MAX_NBRS   = 16;
+const INIT_E     = 100;
+const GAIN_BASE  = 3.0;
+const MAX_E      = 300;
+const MUT_RATE   = 0.05;
+const MUT_STR    = 0.20;
+const LEARN_RATE = 0.10;
+const MB_MAX     = 100;
+const ZOOM_PER_STEP = 0.995;
+
+// ── Aperiodic shock targets ───────────────────────────────────────────────────
+// Sum of 3 sine waves with incommensurable periods creates a non-repeating pattern
+const PERTURB_TARGETS = [
+  { r: -0.75,   i:  0.100, label: 'cardioid edge'   },
+  { r: -0.7269, i:  0.1889,label: 'dense spiral'    },
+  { r: -0.1226, i:  0.7449,label: 'period-3 island' },
+  { r: -1.7549, i:  0.0,   label: 'period-3 real'   },
+  { r:  0.2820, i:  0.5300,label: 'antenna tip'     },
+  { r: -0.5604, i:  0.6423,label: 'seahorse'        },
+];
+const PERTURB_COOLDOWN  = 80;
+const PERTURB_THRESHOLD = 0.65;
+const MORTALITY_DELAY   = 25;  // steps after shock before measuring survivors
+
+// ── Resource hotspots ─────────────────────────────────────────────────────────
+const N_HOTSPOTS   = 6;
+const HOTSPOT_R    = 90;    // influence radius in pixels
+const HOTSPOT_PEAK = 2.0;   // max energy bonus per step
+const HOTSPOT_DRIFT = 0.25; // px/step random walk speed
+
+// ── Globals ───────────────────────────────────────────────────────────────────
+let canvasW, canvasH;
+let seedX, seedY, voronoiMap, nbrList, nbrCount, imgData;
+let energy, cellState, nextState, cellError, cellRepro, cellBand, cellType;
+let symbolMap, weights, cReal, cImag;
+
+let viewRMin, viewRMax, viewIMin, viewIMax;
+let currentTarget = 0;
+
+// Hotspot state
+let hsX, hsY, hsPhase;  // position + oscillation phase per hotspot
+let hsCellBonus;         // pre-computed bonus per cell (updated when hotspots move)
+
+// Aperiodic noise state
+let perturbCooldown = 0;
+let perturbLastNoise = 0;
+
+// Perturbation tracking
+let perturbCount  = 0;
+let perturbPending = null;  // { step, aliveBefore } while waiting for MORTALITY_DELAY
+let mortalityHistory = [];  // array of mortality fractions (0–1)
+
+let generation = 0, totalRepro = 0, totalDeaths = 0;
+let running = false, animId = null;
+let lastError = 0, learningMode = false, avgValence = 6;
+
+const POP_HISTORY_LEN = 120;
+let popHistory = [];
+
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const hCanvas = document.getElementById('hist-canvas');
+const hCtx    = hCanvas.getContext('2d');
+const mCanvas = document.getElementById('mort-canvas');
+const mCtx    = mCanvas.getContext('2d');
+
+function sigmoid(x) { return 1.0 / (1.0 + Math.exp(-x)); }
+
+// ── Aperiodic noise ───────────────────────────────────────────────────────────
+// Three incommensurable periods: ~330, ~233, ~131 steps (ratio ≈ 1 : 1/√2 : 1/√5)
+function aperiodicNoise(t) {
+  return (Math.sin(t * 0.019) + Math.sin(t * 0.027) + Math.sin(t * 0.048)) / 3.0;
+}
+
+function checkPerturb(step) {
+  if (perturbCooldown > 0) { perturbCooldown--; return false; }
+  const n = aperiodicNoise(step);
+  const fired = perturbLastNoise < PERTURB_THRESHOLD && n >= PERTURB_THRESHOLD;
+  perturbLastNoise = n;
+  if (fired) { perturbCooldown = PERTURB_COOLDOWN; return true; }
+  return false;
+}
+
+// Estimate steps until next threshold crossing (for display)
+function stepsToNextPerturb() {
+  if (perturbCooldown > 0) return perturbCooldown;
+  for (let dt = 1; dt < 500; dt++) {
+    const n = aperiodicNoise(generation + dt);
+    if (n >= PERTURB_THRESHOLD) return dt;
+  }
+  return 500;
+}
+
+// ── Mandelbrot ────────────────────────────────────────────────────────────────
+function escapeband(cr, ci) {
+  let zr = 0, zi = 0;
+  for (let n = 0; n < MB_MAX; n++) {
+    const zr2 = zr*zr - zi*zi + cr;
+    zi = 2*zr*zi + ci; zr = zr2;
+    if (zr*zr + zi*zi > 4) {
+      if (n <  5) return 6;
+      if (n < 15) return 5;
+      if (n < 30) return 4;
+      if (n < 50) return 3;
+      if (n < 70) return 2;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+// ── Voronoi ───────────────────────────────────────────────────────────────────
+function buildVoronoiMap() {
+  const GW = 10, GH = 6;
+  const TW = Math.ceil(canvasW / GW), TH = Math.ceil(canvasH / GH);
+  const buckets = Array.from({length: GW * GH}, () => []);
+  for (let i = 0; i < N_CELLS; i++) {
+    const gx = Math.min(GW-1, Math.floor(seedX[i]/TW));
+    const gy = Math.min(GH-1, Math.floor(seedY[i]/TH));
+    buckets[gy*GW+gx].push(i);
+  }
+  for (let py = 0; py < canvasH; py++) {
+    const gy0 = Math.max(0, Math.floor(py/TH)-1), gy1 = Math.min(GH-1, Math.floor(py/TH)+1);
+    for (let px = 0; px < canvasW; px++) {
+      const gx0 = Math.max(0, Math.floor(px/TW)-1), gx1 = Math.min(GW-1, Math.floor(px/TW)+1);
+      let best = 0, bestD = Infinity;
+      for (let gy = gy0; gy <= gy1; gy++)
+        for (let gx = gx0; gx <= gx1; gx++)
+          for (const ii of buckets[gy*GW+gx]) {
+            const dx = px-seedX[ii], dy = py-seedY[ii], d = dx*dx+dy*dy;
+            if (d < bestD) { bestD = d; best = ii; }
+          }
+      voronoiMap[py*canvasW+px] = best;
+    }
+  }
+}
+
+function lloydRelax(iters) {
+  const sumX = new Float64Array(N_CELLS), sumY = new Float64Array(N_CELLS), cnt = new Int32Array(N_CELLS);
+  for (let iter = 0; iter < iters; iter++) {
+    buildVoronoiMap();
+    sumX.fill(0); sumY.fill(0); cnt.fill(0);
+    for (let py = 0; py < canvasH; py++)
+      for (let px = 0; px < canvasW; px++) {
+        const ci = voronoiMap[py*canvasW+px];
+        sumX[ci] += px; sumY[ci] += py; cnt[ci]++;
+      }
+    for (let i = 0; i < N_CELLS; i++)
+      if (cnt[i] > 0) { seedX[i] = sumX[i]/cnt[i]; seedY[i] = sumY[i]/cnt[i]; }
+  }
+  buildVoronoiMap();
+}
+
+function buildNeighbors() {
+  nbrList  = new Int32Array(N_CELLS * MAX_NBRS).fill(-1);
+  nbrCount = new Int32Array(N_CELLS);
+  const seen = new Set();
+  function addEdge(a, b) {
+    const key = a < b ? a*N_CELLS+b : b*N_CELLS+a;
+    if (seen.has(key)) return; seen.add(key);
+    if (nbrCount[a] < MAX_NBRS) nbrList[a*MAX_NBRS + nbrCount[a]++] = b;
+    if (nbrCount[b] < MAX_NBRS) nbrList[b*MAX_NBRS + nbrCount[b]++] = a;
+  }
+  for (let py = 0; py < canvasH; py++)
+    for (let px = 0; px < canvasW-1; px++) {
+      const a = voronoiMap[py*canvasW+px], b = voronoiMap[py*canvasW+px+1];
+      if (a !== b) addEdge(a, b);
+    }
+  for (let py = 0; py < canvasH-1; py++)
+    for (let px = 0; px < canvasW; px++) {
+      const a = voronoiMap[py*canvasW+px], b = voronoiMap[(py+1)*canvasW+px];
+      if (a !== b) addEdge(a, b);
+    }
+  let vSum = 0;
+  for (let i = 0; i < N_CELLS; i++) vSum += nbrCount[i];
+  avgValence = (vSum/N_CELLS).toFixed(1);
+}
+
+// ── Hotspot management ────────────────────────────────────────────────────────
+function initHotspots() {
+  hsX     = new Float32Array(N_HOTSPOTS);
+  hsY     = new Float32Array(N_HOTSPOTS);
+  hsPhase = new Float32Array(N_HOTSPOTS);
+  hsCellBonus = new Float32Array(N_CELLS);
+  for (let h = 0; h < N_HOTSPOTS; h++) {
+    hsX[h]     = 0.15*canvasW + Math.random() * 0.7*canvasW;
+    hsY[h]     = 0.15*canvasH + Math.random() * 0.7*canvasH;
+    hsPhase[h] = Math.random() * Math.PI * 2;
+  }
+  rebuildHotspotBonuses();
+}
+
+function rebuildHotspotBonuses() {
+  hsCellBonus.fill(0);
+  const r2 = HOTSPOT_R * HOTSPOT_R;
+  for (let h = 0; h < N_HOTSPOTS; h++) {
+    // Strength oscillates slowly so hotspots pulse
+    const strength = HOTSPOT_PEAK * (0.5 + 0.5 * Math.sin(hsPhase[h]));
+    for (let i = 0; i < N_CELLS; i++) {
+      const dx = seedX[i] - hsX[h], dy = seedY[i] - hsY[h];
+      const d2 = dx*dx + dy*dy;
+      if (d2 < r2) {
+        hsCellBonus[i] += strength * (1.0 - Math.sqrt(d2) / HOTSPOT_R);
+      }
+    }
+  }
+}
+
+function driftHotspots() {
+  for (let h = 0; h < N_HOTSPOTS; h++) {
+    hsX[h] += (Math.random() - 0.5) * 2 * HOTSPOT_DRIFT * 2;
+    hsY[h] += (Math.random() - 0.5) * 2 * HOTSPOT_DRIFT * 2;
+    hsX[h]  = Math.max(HOTSPOT_R*0.5, Math.min(canvasW - HOTSPOT_R*0.5, hsX[h]));
+    hsY[h]  = Math.max(HOTSPOT_R*0.5, Math.min(canvasH - HOTSPOT_R*0.5, hsY[h]));
+    hsPhase[h] += 0.018 + Math.random() * 0.004;
+  }
+  rebuildHotspotBonuses();
+}
+
+// ── Canvas + topology init ────────────────────────────────────────────────────
+function initCanvas() {
+  const wrap = canvas.parentElement;
+  canvasW = wrap.clientWidth;
+  canvasH = Math.floor(Math.min(canvasW*0.6, window.innerHeight*0.5));
+  canvas.width = canvasW; canvas.height = canvasH;
+  imgData = ctx.createImageData(canvasW, canvasH);
+  voronoiMap = new Int32Array(canvasW*canvasH);
+  seedX = new Float32Array(N_CELLS); seedY = new Float32Array(N_CELLS);
+  for (let i = 0; i < N_CELLS; i++) {
+    seedX[i] = Math.random()*canvasW; seedY[i] = Math.random()*canvasH;
+  }
+  lloydRelax(2);
+  buildNeighbors();
+  hCanvas.width  = hCanvas.parentElement.clientWidth;
+  hCanvas.height = 100;
+  mCanvas.width  = mCanvas.parentElement.clientWidth;
+  mCanvas.height = 64;
+  document.getElementById('init-overlay').style.display = 'none';
+}
+
+// ── Simulation init ───────────────────────────────────────────────────────────
+function initSim() {
+  energy    = new Float32Array(N_CELLS);
+  cellState = new Float32Array(N_CELLS);
+  nextState = new Float32Array(N_CELLS);
+  cellError = new Float32Array(N_CELLS);
+  cellRepro = new Uint8Array(N_CELLS);
+  cellBand  = new Uint8Array(N_CELLS);
+  cellType  = new Uint8Array(N_CELLS);
+  symbolMap = new Float32Array(N_CELLS);
+  weights   = new Float32Array(N_CELLS*MAX_NBRS);
+  cReal     = new Float32Array(N_CELLS);
+  cImag     = new Float32Array(N_CELLS);
+
+  currentTarget = 0;
+  const tgt = PERTURB_TARGETS[currentTarget];
+  viewRMin = tgt.r - 1.75; viewRMax = tgt.r + 1.75;
+  viewIMin = tgt.i - 1.25; viewIMax = tgt.i + 1.25;
+
+  perturbCooldown  = 0;
+  perturbLastNoise = aperiodicNoise(0);
+  perturbCount     = 0;
+  perturbPending   = null;
+  mortalityHistory = [];
+  popHistory = [];
+
+  const dR = viewRMax-viewRMin, dI = viewIMax-viewIMin;
+  for (let i = 0; i < N_CELLS; i++) {
+    cReal[i] = viewRMin + (seedX[i]/canvasW)*dR;
+    cImag[i] = viewIMin + (seedY[i]/canvasH)*dI;
+    const band = escapeband(cReal[i], cImag[i]);
+    cellBand[i]   = band;
+    cellState[i]  = band/6.0;
+    symbolMap[i]  = band/6.0;
+    energy[i]     = INIT_E*(0.5+Math.random());
+    cellType[i]   = Math.floor(Math.random()*N_TYPES);
+    const nc = nbrCount[i];
+    for (let k = 0; k < nc; k++)
+      weights[i*MAX_NBRS+k] = (Math.random()-0.5)*0.5;
+  }
+  generation = 0; totalRepro = 0; totalDeaths = 0; lastError = 0;
+  initHotspots();
+}
+
+// ── Fire a perturbation shock ─────────────────────────────────────────────────
+function firePerturb() {
+  // Record survivors before the shock landscape takes effect
+  let aliveBefore = 0;
+  for (let i = 0; i < N_CELLS; i++) if (energy[i] > 0) aliveBefore++;
+
+  // Jump to next zoom target
+  currentTarget = (currentTarget + 1) % PERTURB_TARGETS.length;
+  const tgt = PERTURB_TARGETS[currentTarget];
+
+  // Reset viewport to full view of new target, then let continuous zoom restart
+  viewRMin = tgt.r - 1.75; viewRMax = tgt.r + 1.75;
+  viewIMin = tgt.i - 1.25; viewIMax = tgt.i + 1.25;
+
+  perturbCount++;
+  perturbPending = { step: generation, aliveBefore };
+  document.getElementById('stat-target').textContent = tgt.label;
+}
+
+// ── Simulation step ───────────────────────────────────────────────────────────
+function step() {
+  cellRepro.fill(0);
+
+  // Continuous zoom toward current target
+  const halfR = (viewRMax-viewRMin)*0.5*ZOOM_PER_STEP;
+  const halfI = (viewIMax-viewIMin)*0.5*ZOOM_PER_STEP;
+  const tgt = PERTURB_TARGETS[currentTarget];
+  viewRMin = tgt.r - halfR; viewRMax = tgt.r + halfR;
+  viewIMin = tgt.i - halfI; viewIMax = tgt.i + halfI;
+
+  // Recompute ground-truth bands
+  const dR = viewRMax-viewRMin, dI = viewIMax-viewIMin;
+  for (let i = 0; i < N_CELLS; i++) {
+    cReal[i] = viewRMin + (seedX[i]/canvasW)*dR;
+    cImag[i] = viewIMin + (seedY[i]/canvasH)*dI;
+    const band = escapeband(cReal[i], cImag[i]);
+    cellBand[i]  = band;
+    nextState[i] = band/6.0;
+  }
+
+  // Update symbol maps
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] > 0 && typeGround(cellType[i]) === 1)
+      symbolMap[i] = SYMBOL_LAG*symbolMap[i] + (1-SYMBOL_LAG)*nextState[i];
+  }
+
+  // Drift hotspots every 5 steps (performance: avoid per-step full rebuild)
+  if (generation % 5 === 0) driftHotspots();
+
+  // Predict and update energy
+  let errSum = 0, errCnt = 0;
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] <= 0) continue;
+    const t      = cellType[i];
+    const depth  = typeDepth(t);
+    const ground = typeGround(t);
+    const nc     = nbrCount[i];
+    let pred;
+
+    if (depth === 2) {
+      pred = Math.random();
+    } else {
+      const d = depth === 0 ? nc : Math.min(TYPE_NBR_D[t], nc);
+      let sum = 0;
+      for (let k = 0; k < d; k++)
+        sum += weights[i*MAX_NBRS+k] * cellState[nbrList[i*MAX_NBRS+k]];
+      pred = sigmoid(sum);
+    }
+
+    const target    = ground === 0 ? nextState[i] : symbolMap[i];
+    const errSigned = pred - target;
+    const err       = Math.abs(errSigned);
+    cellError[i]    = err;
+
+    // Hotspot resource bonus added to base gain
+    const gain = GAIN_BASE + hsCellBonus[i];
+    energy[i] = Math.min(energy[i] + gain - TYPE_COST[t] - err*TYPE_ERR_F[t], MAX_E);
+
+    if (ground === 1) {
+      const divergence = Math.abs(symbolMap[i] - nextState[i]);
+      energy[i] -= GROUND_TAX * divergence;
+    }
+
+    if (learningMode && depth === 0) {
+      const learnTarget = ground === 0 ? nextState[i] : symbolMap[i];
+      const learnErr    = pred - learnTarget;
+      const dpred       = pred*(1.0-pred);
+      for (let k = 0; k < nc; k++) {
+        const xi = cellState[nbrList[i*MAX_NBRS+k]];
+        weights[i*MAX_NBRS+k] -= LEARN_RATE*learnErr*dpred*xi;
+      }
+    }
+    errSum += err; errCnt++;
+  }
+  lastError = errCnt > 0 ? errSum/errCnt : 0;
+
+  for (let i = 0; i < N_CELLS; i++) cellState[i] = nextState[i];
+
+  // Kill dead cells
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] < 0) { energy[i] = 0; totalDeaths++; }
+  }
+
+  // Spontaneous generation (~1 per 50 steps)
+  if (Math.random() < 0.02) {
+    const dead = [];
+    for (let i = 0; i < N_CELLS; i++) if (energy[i] === 0) dead.push(i);
+    if (dead.length > 0) {
+      const i = dead[Math.floor(Math.random()*dead.length)];
+      energy[i]   = INIT_E * 0.4;
+      cellType[i] = Math.floor(Math.random()*N_TYPES);
+      const nc = nbrCount[i];
+      for (let k = 0; k < nc; k++)
+        weights[i*MAX_NBRS+k] = (Math.random()-0.5)*0.5;
+    }
+  }
+
+  // Reproduction
+  const reproList = [];
+  for (let i = 0; i < N_CELLS; i++)
+    if (energy[i] >= TYPE_REPRO_T[cellType[i]]) reproList.push(i);
+  for (let k = reproList.length-1; k > 0; k--) {
+    const j = Math.floor(Math.random()*(k+1));
+    [reproList[k], reproList[j]] = [reproList[j], reproList[k]];
+  }
+  for (const i of reproList) {
+    const t = cellType[i];
+    if (energy[i] < TYPE_REPRO_T[t]) continue;
+    const nc = nbrCount[i];
+    if (nc === 0) continue;
+    let bestT = -1, minE = energy[i];
+    for (let k = 0; k < nc; k++) {
+      const ni = nbrList[i*MAX_NBRS+k];
+      if (energy[ni] < minE) { minE = energy[ni]; bestT = ni; }
+    }
+    if (bestT >= 0) {
+      const bnc = nbrCount[bestT];
+      for (let k = 0; k < bnc; k++) {
+        const srcW = k < nc ? weights[i*MAX_NBRS+k] : (Math.random()-0.5)*0.5;
+        let nw = srcW;
+        if (Math.random() < MUT_RATE) nw += (Math.random()-0.5)*2*MUT_STR;
+        weights[bestT*MAX_NBRS+k] = nw;
+      }
+      let newDepth  = typeDepth(t);
+      let newGround = typeGround(t);
+      if (Math.random() < TYPE_MUT) {
+        if (newDepth === 0)      newDepth = 1;
+        else if (newDepth === 2) newDepth = 1;
+        else newDepth = Math.random() < 0.5 ? 0 : 2;
+      }
+      if (Math.random() < GROUND_MUT) newGround = 1 - newGround;
+      cellType[bestT] = makeType(newDepth, newGround);
+      energy[bestT]   = INIT_E*0.5;
+      energy[i]      -= TYPE_REPRO_C[t];
+      cellRepro[i]    = 1;
+      totalRepro++;
+    }
+  }
+
+  // Check aperiodic perturbation trigger
+  if (checkPerturb(generation)) firePerturb();
+
+  // Close pending mortality measurement after delay
+  if (perturbPending && (generation - perturbPending.step) >= MORTALITY_DELAY) {
+    let aliveAfter = 0;
+    for (let i = 0; i < N_CELLS; i++) if (energy[i] > 0) aliveAfter++;
+    const mort = perturbPending.aliveBefore > 0
+      ? (perturbPending.aliveBefore - aliveAfter) / perturbPending.aliveBefore
+      : 0;
+    mortalityHistory.push(Math.max(0, mort));
+    perturbPending = null;
+  }
+
+  generation++;
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+const TYPE_COLOR_DARK  = [[22,78,99],[76,29,100],[20,83,45],[92,60,12],[124,45,18],[136,19,44]];
+const TYPE_COLOR_LIGHT = [[6,182,212],[167,139,250],[22,163,74],[180,113,9],[234,88,12],[244,63,100]];
+
+function typeColor(t, e) {
+  const s = Math.min(e/MAX_E, 1.0);
+  const [dr,dg,db] = TYPE_COLOR_DARK[t];
+  const [lr,lg,lb] = TYPE_COLOR_LIGHT[t];
+  return [Math.floor(dr+s*(lr-dr)), Math.floor(dg+s*(lg-dg)), Math.floor(db+s*(lb-db))];
+}
+
+function draw() {
+  const d = imgData.data;
+  const cellR = new Uint8Array(N_CELLS);
+  const cellG = new Uint8Array(N_CELLS);
+  const cellB = new Uint8Array(N_CELLS);
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] <= 0)  { cellR[i] = 8;   cellG[i] = 8;   cellB[i] = 8;   continue; }
+    if (cellRepro[i])    { cellR[i] = 248; cellG[i] = 250; cellB[i] = 252; continue; }
+    const [r,g,b] = typeColor(cellType[i], energy[i]);
+    cellR[i] = r; cellG[i] = g; cellB[i] = b;
+  }
+  for (let py = 0; py < canvasH; py++) {
+    const row = py*canvasW;
+    for (let px = 0; px < canvasW; px++) {
+      const pi = (row+px)*4;
+      const ci = voronoiMap[row+px];
+      const leftCI = px > 0 ? voronoiMap[row+px-1] : ci;
+      const topCI  = py > 0 ? voronoiMap[row-canvasW+px] : ci;
+      const isFoam = (leftCI !== ci || topCI !== ci);
+      const isType = isFoam && (cellType[leftCI] !== cellType[ci] || cellType[topCI] !== cellType[ci]);
+      if (isFoam) {
+        const bv = isType ? 40 : 0;
+        d[pi]=bv; d[pi+1]=bv; d[pi+2]=bv; d[pi+3]=255;
+      } else {
+        d[pi]=cellR[ci]; d[pi+1]=cellG[ci]; d[pi+2]=cellB[ci]; d[pi+3]=255;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // Draw hotspot halos as faint warm rings
+  for (let h = 0; h < N_HOTSPOTS; h++) {
+    const strength = 0.5 + 0.5 * Math.sin(hsPhase[h]);
+    const sx = hsX[h] * (canvas.offsetWidth / canvasW);
+    const sy = hsY[h] * (canvas.offsetHeight / canvasH);
+    const sr = HOTSPOT_R * (canvas.offsetWidth / canvasW);
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    grad.addColorStop(0,   `rgba(251,146,60,${0.10 * strength})`);
+    grad.addColorStop(0.5, `rgba(251,146,60,${0.05 * strength})`);
+    grad.addColorStop(1,   'rgba(251,146,60,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// ── Histogram + mortality chart ───────────────────────────────────────────────
+function drawHistogram(alive, counts) {
+  const W = hCanvas.width, H = hCanvas.height;
+  hCtx.clearRect(0, 0, W, H);
+  hCtx.fillStyle = '#f7f7f5';
+  hCtx.fillRect(0, 0, W, H);
+  const MID = Math.floor(H * 0.55);
+  const barColors = ['#06b6d4','#a855f7','#16a34a','#d97706','#ea580c','#f43f5e'];
+  const barLabels = ['PB','SB','PN','SN','PD','SD'];
+  const barH      = Math.floor((MID - 4) / 6);
+  const maxW      = W - 36;
+  for (let t = 0; t < N_TYPES; t++) {
+    const y  = t*(barH+1) + 2;
+    const bw = Math.round((counts[t]/N_CELLS)*maxW);
+    hCtx.fillStyle = barColors[t];
+    hCtx.fillRect(0, y, bw, barH);
+    hCtx.fillStyle = '#374151';
+    hCtx.font = '8px monospace';
+    hCtx.fillText(`${barLabels[t]}${counts[t]}`, Math.max(bw+2, 2), y+barH-1);
+  }
+  const sorted = [...counts].sort((a,b)=>b-a);
+  const r1 = sorted[0] > 0 ? sorted[1]/sorted[0] : 0;
+  const r2 = sorted[1] > 0 ? sorted[2]/sorted[1] : 0;
+  const isZipf = r1 > 0.35 && r1 < 0.75 && r2 > 0.50 && r2 < 0.85;
+  hCtx.fillStyle = isZipf ? '#16a34a' : '#b91c1c';
+  hCtx.font = '8px monospace';
+  hCtx.fillText(`ZIPF ${isZipf?'✓':'✗'} ${r1.toFixed(2)}/${r2.toFixed(2)}`, 2, MID-1);
+
+  const spH = H - MID - 2;
+  const n = popHistory.length;
+  if (n >= 2) {
+    hCtx.fillStyle = '#ede9e4';
+    hCtx.fillRect(0, MID+1, W, spH);
+    const midY = MID + 1 + Math.round(spH * 0.5);
+    hCtx.strokeStyle = '#c8c4be'; hCtx.lineWidth = 0.5;
+    hCtx.beginPath(); hCtx.moveTo(0, midY); hCtx.lineTo(W, midY); hCtx.stroke();
+    hCtx.strokeStyle = '#374151'; hCtx.lineWidth = 1.2;
+    hCtx.beginPath();
+    for (let k = 0; k < n; k++) {
+      const x = Math.round((k/(n-1))*(W-1));
+      const y = MID+1 + Math.round((1 - popHistory[k]/N_CELLS)*spH);
+      k === 0 ? hCtx.moveTo(x, y) : hCtx.lineTo(x, y);
+    }
+    hCtx.stroke();
+    hCtx.fillStyle = '#374151'; hCtx.font = '8px monospace';
+    hCtx.fillText(`pop ${alive}/${N_CELLS}`, 2, H-1);
+  }
+}
+
+function drawMortalityChart() {
+  const W = mCanvas.width, H = mCanvas.height;
+  mCtx.clearRect(0, 0, W, H);
+  mCtx.fillStyle = '#f7f7f5';
+  mCtx.fillRect(0, 0, W, H);
+
+  const n = mortalityHistory.length;
+  mCtx.fillStyle = '#374151'; mCtx.font = '8px monospace';
+  mCtx.fillText('MORTALITY / SHOCK', 2, 9);
+
+  if (n === 0) {
+    mCtx.fillStyle = '#9ca3af';
+    mCtx.fillText('waiting for first shock…', 2, H-4);
+    return;
+  }
+
+  const BAR_AREA_TOP = 12, BAR_AREA_H = H - BAR_AREA_TOP - 10;
+  const maxMort = Math.max(...mortalityHistory, 0.05);
+  const barW    = Math.max(3, Math.floor((W - 4) / Math.max(n, 1)));
+
+  for (let k = 0; k < n; k++) {
+    const bh = Math.round((mortalityHistory[k] / maxMort) * BAR_AREA_H);
+    const x  = 2 + k * barW;
+    const y  = BAR_AREA_TOP + BAR_AREA_H - bh;
+
+    // Color: early shocks red, later shocks green (diminishing mortality)
+    const frac = n > 1 ? k / (n-1) : 0;
+    const r = Math.floor(185 + (22-185)*frac);
+    const g = Math.floor(28  + (163-28)*frac);
+    const b = Math.floor(28  + (74-28)*frac);
+    mCtx.fillStyle = `rgb(${r},${g},${b})`;
+    mCtx.fillRect(x, y, Math.max(barW-1, 1), bh);
+
+    // Label every bar with percent
+    if (barW >= 14) {
+      mCtx.fillStyle = '#374151';
+      mCtx.fillText(`${Math.round(mortalityHistory[k]*100)}%`, x, H-1);
+    }
+  }
+
+  // Draw trend line if we have enough data
+  if (n >= 3) {
+    let sx=0, sy=0, sxy=0, sx2=0;
+    for (let k=0; k<n; k++) { sx+=k; sy+=mortalityHistory[k]; sxy+=k*mortalityHistory[k]; sx2+=k*k; }
+    const slope = (n*sxy - sx*sy) / (n*sx2 - sx*sx);
+    const intercept = (sy - slope*sx) / n;
+    const y0 = BAR_AREA_TOP + BAR_AREA_H - (intercept / maxMort) * BAR_AREA_H;
+    const y1 = BAR_AREA_TOP + BAR_AREA_H - ((slope*(n-1)+intercept) / maxMort) * BAR_AREA_H;
+    mCtx.strokeStyle = slope < -0.005 ? '#16a34a' : slope > 0.005 ? '#b91c1c' : '#9ca3af';
+    mCtx.lineWidth = 1.5;
+    mCtx.setLineDash([3,2]);
+    mCtx.beginPath();
+    mCtx.moveTo(2 + 0*(barW), Math.min(Math.max(y0, BAR_AREA_TOP), H-10));
+    mCtx.lineTo(2 + (n-1)*(barW), Math.min(Math.max(y1, BAR_AREA_TOP), H-10));
+    mCtx.stroke();
+    mCtx.setLineDash([]);
+  }
+
+  if (n > 0) {
+    const lastM = mortalityHistory[n-1];
+    mCtx.fillStyle = '#374151'; mCtx.font = '8px monospace';
+    mCtx.fillText(`last: ${Math.round(lastM*100)}%`, W-52, H-1);
+  }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const counts = new Array(N_TYPES).fill(0);
+  let alive = 0, eSum = 0;
+  for (let i = 0; i < N_CELLS; i++) {
+    if (energy[i] > 0) { alive++; eSum += energy[i]; counts[cellType[i]]++; }
+  }
+  popHistory.push(alive);
+  if (popHistory.length > POP_HISTORY_LEN) popHistory.shift();
+
+  let trend = '→';
+  if (popHistory.length >= 10) {
+    const recent = popHistory.slice(-10);
+    const delta  = recent[recent.length-1] - recent[0];
+    trend = delta > 3 ? '↑' : delta < -3 ? '↓' : '→';
+  }
+
+  const errEl = document.getElementById('stat-error');
+  errEl.textContent = lastError.toFixed(3);
+  errEl.style.color = lastError < 0.5 ? 'var(--green)' : 'var(--accent)';
+
+  document.getElementById('stat-gen').textContent          = generation;
+  document.getElementById('stat-alive').textContent        = `${alive} ${trend}`;
+  document.getElementById('stat-energy').textContent       = alive > 0 ? (eSum/alive).toFixed(1) : '0';
+  document.getElementById('stat-perturb').textContent      = perturbCount;
+  document.getElementById('stat-repro-deaths').textContent = `${totalRepro} / ${totalDeaths}`;
+  document.getElementById('stat-mode').textContent         = learningMode ? 'EVOLVE + LEARN' : 'EVOLVE ONLY';
+
+  // Mortality display
+  const n = mortalityHistory.length;
+  if (n > 0) {
+    const last = mortalityHistory[n-1];
+    document.getElementById('stat-mortality').textContent = `${Math.round(last*100)}%`;
+    document.getElementById('stat-mortality').style.color = last < 0.10 ? 'var(--green)' : last < 0.20 ? 'var(--amber)' : 'var(--accent)';
+  }
+
+  // Trend: compare first half vs second half of mortality history
+  if (n >= 4) {
+    const firstHalf  = mortalityHistory.slice(0, Math.floor(n/2));
+    const secondHalf = mortalityHistory.slice(Math.floor(n/2));
+    const avgFirst   = firstHalf.reduce((a,b)=>a+b,0)/firstHalf.length;
+    const avgSecond  = secondHalf.reduce((a,b)=>a+b,0)/secondHalf.length;
+    const trendEl    = document.getElementById('stat-trend');
+    if (avgSecond < avgFirst - 0.02) {
+      trendEl.textContent = `↓ adapting (${Math.round(avgFirst*100)}% → ${Math.round(avgSecond*100)}%)`;
+      trendEl.style.color = 'var(--green)';
+    } else if (avgSecond > avgFirst + 0.02) {
+      trendEl.textContent = `↑ degrading`;
+      trendEl.style.color = 'var(--accent)';
+    } else {
+      trendEl.textContent = `→ stable`;
+      trendEl.style.color = 'var(--muted)';
+    }
+  } else {
+    document.getElementById('stat-trend').textContent = `need ${4-n} more shock(s)`;
+  }
+
+  document.getElementById('stat-nextp').textContent = `~${stepsToNextPerturb()} steps`;
+
+  drawHistogram(alive, counts);
+  drawMortalityChart();
+}
+
+// ── Loop / controls ───────────────────────────────────────────────────────────
+function loop() {
+  if (!running) return;
+  const speed = parseInt(document.getElementById('speed').value);
+  const stepsPerFrame = Math.max(1, Math.floor(speed/4));
+  for (let i = 0; i < stepsPerFrame; i++) step();
+  draw(); updateStats();
+  animId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = !running;
+  const btn = document.getElementById('btn-play');
+  if (running) {
+    btn.textContent = '■ PAUSE'; btn.classList.add('active');
+    animId = requestAnimationFrame(loop);
+  } else {
+    btn.textContent = '▶ PLAY'; btn.classList.remove('active');
+    if (animId) cancelAnimationFrame(animId);
+  }
+}
+
+function stepOnce() { if (running) return; step(); draw(); updateStats(); }
+function resetSim()  { if (running) togglePlay(); initSim(); draw(); updateStats(); }
+
+function toggleMode() {
+  learningMode = !learningMode;
+  const btn = document.getElementById('btn-mode');
+  btn.textContent = learningMode ? '⟳ EVOLVE+LEARN' : '○ EVOLVE ONLY';
+  btn.classList.toggle('active', learningMode);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+requestAnimationFrame(() => {
+  initCanvas();
+  initSim();
+  draw();
+  updateStats();
+});
+</script>
+</body>
+</html>
