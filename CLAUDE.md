@@ -20,7 +20,7 @@ Archive of every meaningful iteration of "The Game of Truth" — a cellular auto
 ## Files
 
 ```
-index.html      — Gallery landing page. Shows all 10 versions with descriptions.
+index.html      — Gallery landing page. Shows all 11 versions with descriptions.
 v1.html         — RSA-Omega: First Contact (gen 117)
 v2.html         — The Aesthetic (gen 126)
 v3.html         — Mandelbrot Physics (gen 133)
@@ -30,10 +30,23 @@ v6.html         — Voronoi Foam Topology (gen 140)
 v7.html         — 3-Panel HUD (gen 140)
 v8.html         — Three Cognitive Types + Zipf (gen 141)
 v9.html         — Variable Population (gen 141)
-v10.html        — The Game of Truth — Six Types (gen 141, canonical current)
+v10.html        — The Game of Truth — Six Types (gen 141)
+v11.html        — Collective Memory (gen 148, current)
 ```
 
-## Current simulation state (v10)
+## Current simulation state (v11 — Collective Memory)
+
+Inherits all v10 mechanics plus three additions:
+
+**Aperiodic Mandelbrot shocks**: `aperiodicNoise(t) = (sin(0.019t)+sin(0.027t)+sin(0.048t))/3`. Fires when crossing 0.65, 80-step cooldown. Cycles through 6 boundary targets. Incommensurable frequencies → never periodic.
+
+**Drifting resource hotspots**: 6 hotspots, 90px radius, +2.0 peak energy/step, 0.25px/step drift, slow phase oscillation. Energy landscape is quasi-stable, not uniform.
+
+**Mortality tracking**: `perturbPending = {step, aliveBefore}`, measured 25 steps later. `mortalityHistory[]` stores rate per shock. Bar chart canvas (`#mort-canvas`) with red→green bars and linear regression trend line. Stats: perturbCount, last shock mortality %, trend (adapting/degrading/stable).
+
+**Scientific claim**: Populations store information about past environments in their type distribution, producing measurable collective memory — without individual cells having memory. Mortality trend should decrease as type composition adapts.
+
+## v10 simulation state (archived)
 
 **Two axes**: loop depth (Builder/Navigator/Drifter) × grounding (Physics/Symbol).  
 `type = depth*2 + grounding` (0–5). Six types:
